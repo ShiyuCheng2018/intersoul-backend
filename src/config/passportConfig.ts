@@ -7,6 +7,8 @@ import {oauth} from "../models/oauth";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
+import { Request, Response, NextFunction } from 'express';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 dotenv.config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
@@ -104,7 +106,7 @@ passport.use("local-login", new LocalStrategy(
             });
 
             // Generate refresh token
-            const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET || 'refresh_secret_key', {
+            const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
                 expiresIn: '7d'
             });
 
@@ -166,6 +168,71 @@ passport.use(new GoogleStrategy({
         }
     }else {
         return done(null, user);
+    }
+}));
+
+
+const opts = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: JWT_SECRET,
+    passReqToCallback: true
+};
+
+
+
+passport.use("jwt",new JwtStrategy(opts, async (req:any, jwt_payload:any, done:any) => {
+    try {
+        const user = await users.findOne({ where: { user_id: jwt_payload.userId } });
+
+        if (!user) {
+            return done(null, false, "User not found");
+        }
+
+        // If token is valid, pass the user to the next middleware
+        return done(null, {email:user.email, userId: user.user_id});
+    } catch (err:any) {
+        if (err.name === 'TokenExpiredError') {
+            const decoded = jwt.decode(req.header('Authorization')?.split('Bearer ')[1]) as any;
+
+            const tokenData = await oauth.findOne({ where: { user_id: decoded.userId } });
+
+            if (!tokenData) {
+                return done(null, false, "User not found");
+            }
+
+            const { refresh_token, expiry_date } = tokenData;
+
+            if (new Date() > expiry_date) {
+                return done(null, false, "Refresh token expired");
+            }
+
+            try {
+                const decodedRefreshToken = jwt.verify(refresh_token, JWT_REFRESH_SECRET) as any;
+
+                const payload = {
+                    userId: decodedRefreshToken.userId,
+                    email: decodedRefreshToken.email
+                };
+
+                const newAccessToken = jwt.sign(payload, JWT_SECRET, {
+                    expiresIn: '15m'
+                });
+
+                // Update the access token in the database
+                await oauth.update({ access_token: newAccessToken }, { where: { user_id: decodedRefreshToken.userId } });
+
+                // Attach the new access token to the request for the next middleware
+                req.headers.authorization = 'Bearer ' + newAccessToken;
+
+                return done(null, payload);
+
+            } catch (refreshErr) {
+                return done(null, false);
+            }
+
+        } else {
+            return done(err, false);
+        }
     }
 }));
 
