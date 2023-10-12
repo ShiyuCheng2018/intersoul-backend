@@ -6,11 +6,14 @@ import {verifications} from "../models/verifications";
 import {oauth} from "../models/oauth";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import dotenv from "dotenv";
+dotenv.config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET as string;
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
 
-console.log(GOOGLE_CLIENT_ID)
 passport.use('local-signup', new LocalStrategy(
     {
         usernameField: 'email',
@@ -46,12 +49,12 @@ passport.use('local-signup', new LocalStrategy(
             };
 
             // Generate access token
-            const accessToken = jwt.sign(payload, process.env.JWT_SECRET || 'secret_key', {
+            const accessToken = jwt.sign(payload, JWT_SECRET, {
                 expiresIn: '15m'
             });
 
             // Generate refresh token
-            const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET || 'refresh_secret_key', {
+            const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
                 expiresIn: '7d'
             });
 
@@ -96,12 +99,12 @@ passport.use("local-login", new LocalStrategy(
             };
 
             // Generate access token
-            const accessToken = jwt.sign(payload, process.env.JWT_SECRET || 'secret_key', {
+            const accessToken = jwt.sign(payload, JWT_SECRET, {
                 expiresIn: '15m'
             });
 
             // Generate refresh token
-            const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET || 'refresh_secret_key', {
+            const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET || 'refresh_secret_key', {
                 expiresIn: '7d'
             });
 

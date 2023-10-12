@@ -4,6 +4,7 @@ import sequelize from './config/database';
 import authRoutes from './routes/authRoutes';
 import "./config/passportConfig";
 import dotenv from 'dotenv';
+import profileRoutes from "./routes/profileRoutes";
 dotenv.config();
 
 const app = express();
@@ -22,6 +23,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/auth', authRoutes);
+app.use("/profile", profileRoutes)
 
 // Error handler
 app.use((err:any, req:any, res:any, next:any) => {
