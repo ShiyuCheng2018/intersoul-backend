@@ -12,6 +12,7 @@ export const jwtMiddleware = (req:any, res:any, next:NextFunction) => {
         if (err) {
             return res.status(500).send('Internal server error');
         }
+
         if (user) {
             req.user = user;
         }

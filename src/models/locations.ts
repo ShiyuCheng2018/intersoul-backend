@@ -16,7 +16,7 @@ export interface locationsAttributes {
 
 export type locationsPk = "location_id";
 export type locationsId = locations[locationsPk];
-export type locationsOptionalAttributes = "state" | "created_at" | "updated_at";
+export type locationsOptionalAttributes = "location_id" | "state" | "created_at" | "updated_at";
 export type locationsCreationAttributes = Optional<locationsAttributes, locationsOptionalAttributes>;
 
 export class locations extends Model<locationsAttributes | locationsCreationAttributes> implements locationsAttributes {
@@ -40,6 +40,7 @@ export class locations extends Model<locationsAttributes | locationsCreationAttr
     return locations.init({
     location_id: {
       type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       allowNull: false,
       primaryKey: true
     },

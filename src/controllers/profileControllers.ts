@@ -4,6 +4,7 @@ import {profileMedias} from "../models/profile_medias";
 import {getMaxMediaOrderForUser} from "../helper/profileHelper";
 import {Sequelize, Op} from "sequelize";
 import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelper";
+import {locations} from "../models/locations";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
@@ -106,5 +107,29 @@ export const putProfileDetails = async (req: any, res: Response) => {
     } catch (error) {
         console.error("Error updating profile details:", error);
         return res.status(500).json({ message: "An error occurred while updating profile details" });
+    }
+}
+
+export const postProfileLocation = async (req: any, res: Response) => {
+    try {
+        const userId = req.user.userId; // Get userId from JWT middleware
+        const { longitude, latitude, country, state, city } = req.body;
+
+        // Use upsert to either update or create based on the userId
+        await locations.upsert({
+            user_id: userId, // Use this to determine if a record exists
+            longitude: longitude,
+            latitude: latitude,
+            country: country,
+            state: state,
+            city: city
+        });
+
+        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
+
+        res.status(200).json({ message: "Location updated/added successfully.", isProfileComplete });
+    } catch (error) {
+        console.error("Error handling location: ", error);
+        res.status(500).json({ error: "Failed to handle location" });
     }
 }
