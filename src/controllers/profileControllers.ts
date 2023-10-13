@@ -5,6 +5,7 @@ import {getMaxMediaOrderForUser} from "../helper/profileHelper";
 import {Sequelize, Op} from "sequelize";
 import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelper";
 import {locations} from "../models/locations";
+import {preferences} from "../models/init-models";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
@@ -131,5 +132,37 @@ export const postProfileLocation = async (req: any, res: Response) => {
     } catch (error) {
         console.error("Error handling location: ", error);
         res.status(500).json({ error: "Failed to handle location" });
+    }
+}
+
+export const putPreferences = async (req: any, res: Response) => {
+    const userId = req.user.userId;
+
+    const { min_age, max_age, min_distance, max_distance, min_height, max_height, body_type_preference_id, gender_preference_id } = req.body;
+
+    try {
+        // Find the user's preference record
+        const preference = await preferences.findOne({ where: { user_id: userId } });
+
+        // If no preference record is found for the user, handle it (maybe create one with default values or send an error response)
+        if (!preference) {
+            return res.status(404).json({ success: false, message: "No preference record found for the user." });
+        }
+
+        // Update the preference
+        preference.min_age = min_age;
+        preference.max_age = max_age;
+        preference.min_distance = min_distance;
+        preference.max_distance = max_distance;
+        preference.min_height = min_height;
+        preference.max_height = max_height;
+        preference.body_type_preference_id = body_type_preference_id;
+        preference.gender_preference_id = gender_preference_id;
+
+        await preference.save();
+
+        return res.status(200).json({ success: true, message: "Preferences updated successfully." });
+    } catch (error:any) {
+        return res.status(500).json({ success: false, message: "Error updating preferences.", error: error.message });
     }
 }
