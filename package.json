@@ -5,7 +5,7 @@
   "main": "src/app.ts",
   "scripts": {
     "start": "ts-node src/app.ts",
-    "sequelize-auto": "sequelize-auto -caseModel c -o \"./src/models\" -d intersoul -h localhost -u shiyucheng -p 5432 -x 1210155474 -e postgres -l ts",
+    "sequelize-auto": "sequelize-auto -caseModel c -o \"./src/models\" -d intersoul -h localhost -u shiyucheng -p 5432 -x 1210155474 -e postgres -t genders -l ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "intersoul - shiyu",

@@ -27,6 +27,10 @@ import { users as _users } from "./users";
 import type { usersAttributes, usersCreationAttributes } from "./users";
 import { verifications as _verifications } from "./verifications";
 import type { verificationsAttributes, verificationsCreationAttributes } from "./verifications";
+import { body_types as _body_types } from "../models/body_types";
+import type { body_typesAttributes, body_typesCreationAttributes } from "./body_types";
+import { preferences as _preferences } from "./preferences";
+import type { preferencesAttributes, preferencesCreationAttributes } from "./preferences";
 
 export {
   _chats as chats,
@@ -43,6 +47,8 @@ export {
   _settings as settings,
   _users as users,
   _verifications as verifications,
+  _body_types as body_types,
+  _preferences as preferences,
 };
 
 export type {
@@ -74,6 +80,10 @@ export type {
   usersCreationAttributes,
   verificationsAttributes,
   verificationsCreationAttributes,
+  body_typesAttributes,
+  body_typesCreationAttributes,
+  preferencesAttributes,
+  preferencesCreationAttributes,
 };
 
 export function initModels(sequelize: Sequelize) {
@@ -91,6 +101,8 @@ export function initModels(sequelize: Sequelize) {
   const settings = _settings.initModel(sequelize);
   const users = _users.initModel(sequelize);
   const verifications = _verifications.initModel(sequelize);
+  const body_types = _body_types.initModel(sequelize);
+  const preferences = _preferences.initModel(sequelize);
 
   messages.belongsTo(chats, { as: "chat", foreignKey: "chat_id"});
   chats.hasMany(messages, { as: "messages", foreignKey: "chat_id"});
@@ -130,6 +142,12 @@ export function initModels(sequelize: Sequelize) {
   users.hasMany(settings, { as: "settings", foreignKey: "user_id"});
   verifications.belongsTo(users, { as: "user", foreignKey: "user_id"});
   users.hasMany(verifications, { as: "verifications", foreignKey: "user_id"});
+  preferences.belongsTo(body_types, { as: "body_type_preference", foreignKey: "body_type_preference_id"});
+  body_types.hasMany(preferences, { as: "preferences", foreignKey: "body_type_preference_id"});
+  preferences.belongsTo(genders, { as: "gender_preference", foreignKey: "gender_preference_id"});
+  genders.hasMany(preferences, { as: "preferences", foreignKey: "gender_preference_id"});
+  preferences.belongsTo(users, { as: "user", foreignKey: "user_id"});
+  users.hasMany(preferences, { as: "preferences", foreignKey: "user_id"});
 
   return {
     chats: chats,
@@ -146,5 +164,7 @@ export function initModels(sequelize: Sequelize) {
     settings: settings,
     users: users,
     verifications: verifications,
+    body_types: body_types,
+    preferences: preferences,
   };
 }
