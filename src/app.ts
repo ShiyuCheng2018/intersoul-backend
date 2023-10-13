@@ -6,6 +6,7 @@ import "./config/passportConfig";
 import dotenv from 'dotenv';
 import profileRoutes from "./routes/profileRoutes";
 import {jwtMiddleware, refreshMiddleware} from "./middlewares/jwtMiddleware";
+import {checkProfileCompletion} from "./middlewares/checkProfileCompletion";
 dotenv.config();
 
 const app = express();

@@ -3,6 +3,7 @@ import {users} from "../models/users";
 import {profileMedias} from "../models/profile_medias";
 import {getMaxMediaOrderForUser} from "../helper/profileHelper";
 import {Sequelize, Op} from "sequelize";
+import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelper";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
@@ -27,8 +28,9 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
 
         // Assuming you're using Sequelize:
         await profileMedias.create(mediaToSave);
+        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
 
-        res.status(200).send({ message: 'Medias uploaded successfully.', medias: mediaToSave });
+        res.status(200).send({ message: 'Medias uploaded successfully.', medias: mediaToSave, isProfileComplete });
     } catch (error) {
         next(error);
     }
@@ -57,7 +59,9 @@ export const deleteProfileMedia = async (req: any, res: Response, next: any) => 
             { where: { "order": { [Op.gt]: mediaOrder } } }
         );
 
-        res.status(200).send({ message: 'Media deleted successfully.' });
+        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
+
+        res.status(200).send({ message: 'Media deleted successfully.', isProfileComplete});
     } catch (error) {
         next(error);
     }

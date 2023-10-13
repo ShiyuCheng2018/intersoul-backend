@@ -1,9 +1,9 @@
-import {users, usersAttributes} from '../models/users';
+import {users} from '../models/users';
 import {locations} from "../models/locations";
 import {profileMedias} from "../models/profile_medias";
 
 export const checkProfileCompletion = async (req: any, res: any, next: any) => {
-    const user_id = req.user?.user_id; // Use optional chaining here
+    const user_id = req.user.userId; // Use optional chaining here
 
     if (!user_id || req.user) {
         return next(new Error("User not found in request object"));

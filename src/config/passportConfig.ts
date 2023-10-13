@@ -7,7 +7,6 @@ import {oauth} from "../models/oauth";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
-import { Request, Response, NextFunction } from 'express';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 dotenv.config();
 
@@ -198,7 +197,7 @@ passport.use("jwt",new JwtStrategy(opts, async (req:any, jwt_payload:any, done:a
 
 // Serialize and Deserialize User
 passport.serializeUser((user: any, done) => {
-    done(null, user.user_id);
+    done(null, user.userId);
 });
 
 passport.deserializeUser(async (id: string, done) => {
