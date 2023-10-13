@@ -2,6 +2,7 @@ import {Response } from 'express';
 import {users} from "../models/users";
 import {profileMedias} from "../models/profile_medias";
 import {getMaxMediaOrderForUser} from "../helper/profileHelper";
+import {Sequelize, Op} from "sequelize";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
@@ -32,6 +33,35 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
         next(error);
     }
 };
+
+export const deleteProfileMedia = async (req: any, res: Response, next: any) => {
+    const mediaId = req.params.mediaId;
+
+    try {
+        const media = await profileMedias.findOne({ where: { profile_media_id: mediaId } });
+        if (!media) {
+            return res.status(404).send({ message: 'Media not found.' });
+        }
+
+        // Use AWS SDK to delete `media.media_path` from your S3 bucket
+        //TODO: Delete from S3
+
+        const mediaOrder = media.order;
+
+        // Delete the media from the database
+        await profileMedias.destroy({ where: { profile_media_id: mediaId } });
+
+        // Reorder the remaining medias
+        await profileMedias.update(
+            { order: Sequelize.literal('"order" - 1') },
+            { where: { "order": { [Op.gt]: mediaOrder } } }
+        );
+
+        res.status(200).send({ message: 'Media deleted successfully.' });
+    } catch (error) {
+        next(error);
+    }
+}
 
 export const putProfileDetails = async (req: any, res: Response) => {
 

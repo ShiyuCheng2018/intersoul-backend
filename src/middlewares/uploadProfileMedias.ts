@@ -17,7 +17,7 @@ const uploadMedia = multer({
         bucket: process.env.AWS_BUCKET as string,
         key: (req:any, file, cb) => {
             console.log(req.user)
-            const filename = `profiles/${req.user.userId}/${file.originalname}`;
+            const filename = `profiles/${req.user.userId}/${Date.now()}-${file.originalname}`;
             cb(null, filename);
         }
     })
