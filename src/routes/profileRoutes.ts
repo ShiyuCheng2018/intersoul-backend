@@ -1,13 +1,11 @@
 import {Router} from "express";
-import {putProfileDetails, postProfileMedias} from "../controllers/profileControllers";
+import {putProfileDetails, postProfileMedia} from "../controllers/profileControllers";
+import uploadMedia from "../middlewares/uploadProfileMedias";
 
 const router = Router();
 
-
-// router.post("/profile/medias", postProfileMedias);
-
- router.put("/details", putProfileDetails);
-
+router.post("/medias",uploadMedia, postProfileMedia);
+router.put("/details", putProfileDetails);
 
 
 export default router;

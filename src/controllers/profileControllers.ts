@@ -1,9 +1,37 @@
-import { Request, Response } from 'express';
+import {Response } from 'express';
 import {users} from "../models/users";
+import {profileMedias} from "../models/profile_medias";
+import {getMaxMediaOrderForUser} from "../helper/profileHelper";
 
-export const postProfileMedias = async (req: Request, res: Response) => {
-    //TODO: Implement this
-}
+export const postProfileMedia = async (req: any, res: Response, next: any) => {
+    console.log(req.body)
+    try {
+        if (!req.file) {
+            return res.status(400).send({ message: 'No files uploaded.' });
+        }
+
+        const startingOrder = await getMaxMediaOrderForUser(req.user.userId);
+
+        if(startingOrder === 6){
+            return res.status(400).send({ message: 'Your reached the maximum profile media uploading.' });
+        }
+
+        const mediaToSave = {
+            user_id: req.user.userId,
+            profile_media_type_id: req.body.mediaType,
+            media_path: req.file.location, // The URL that S3 returns
+            upload_date: new Date(),
+            order: startingOrder + 1 // Only increment by 1 since it's one file
+        };
+
+        // Assuming you're using Sequelize:
+        await profileMedias.create(mediaToSave);
+
+        res.status(200).send({ message: 'Medias uploaded successfully.', medias: mediaToSave });
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const putProfileDetails = async (req: any, res: Response) => {
 

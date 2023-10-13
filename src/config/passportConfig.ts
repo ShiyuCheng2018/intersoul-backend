@@ -181,9 +181,9 @@ const opts = {
 
 
 passport.use("jwt",new JwtStrategy(opts, async (req:any, jwt_payload:any, done:any) => {
+    console.log("jwt_payload: ", jwt_payload)
     try {
         const user = await users.findOne({ where: { user_id: jwt_payload.userId } });
-
         if (!user) {
             return done(null, false, "User not found");
         }
@@ -191,48 +191,8 @@ passport.use("jwt",new JwtStrategy(opts, async (req:any, jwt_payload:any, done:a
         // If token is valid, pass the user to the next middleware
         return done(null, {email:user.email, userId: user.user_id});
     } catch (err:any) {
-        if (err.name === 'TokenExpiredError') {
-            const decoded = jwt.decode(req.header('Authorization')?.split('Bearer ')[1]) as any;
-
-            const tokenData = await oauth.findOne({ where: { user_id: decoded.userId } });
-
-            if (!tokenData) {
-                return done(null, false, "User not found");
-            }
-
-            const { refresh_token, expiry_date } = tokenData;
-
-            if (new Date() > expiry_date) {
-                return done(null, false, "Refresh token expired");
-            }
-
-            try {
-                const decodedRefreshToken = jwt.verify(refresh_token, JWT_REFRESH_SECRET) as any;
-
-                const payload = {
-                    userId: decodedRefreshToken.userId,
-                    email: decodedRefreshToken.email
-                };
-
-                const newAccessToken = jwt.sign(payload, JWT_SECRET, {
-                    expiresIn: '15m'
-                });
-
-                // Update the access token in the database
-                await oauth.update({ access_token: newAccessToken }, { where: { user_id: decodedRefreshToken.userId } });
-
-                // Attach the new access token to the request for the next middleware
-                req.headers.authorization = 'Bearer ' + newAccessToken;
-
-                return done(null, payload);
-
-            } catch (refreshErr) {
-                return done(null, false);
-            }
-
-        } else {
-            return done(err, false);
-        }
+        console.log(err)
+        return done(err, false);
     }
 }));
 

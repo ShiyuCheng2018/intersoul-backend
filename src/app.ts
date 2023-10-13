@@ -5,7 +5,7 @@ import authRoutes from './routes/authRoutes';
 import "./config/passportConfig";
 import dotenv from 'dotenv';
 import profileRoutes from "./routes/profileRoutes";
-import {jwtMiddleware} from "./middlewares/jwtMiddleware";
+import {jwtMiddleware, refreshMiddleware} from "./middlewares/jwtMiddleware";
 dotenv.config();
 
 const app = express();
@@ -23,8 +23,9 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Welcome to InterSoul!');
 });
 
+
 app.use('/auth', authRoutes);
-app.use("/profile", jwtMiddleware, profileRoutes)
+app.use("/profile", jwtMiddleware,refreshMiddleware, profileRoutes)
 
 // Error handler
 app.use((err:any, req:any, res:any, next:any) => {

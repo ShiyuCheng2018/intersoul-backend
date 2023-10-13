@@ -14,9 +14,9 @@ export interface profileMediasAttributes {
 
 export type profileMediasPk = "profile_media_id";
 export type profileMediasId = profileMedias[profileMediasPk];
-export type profileMediasCreationAttributes = profileMediasAttributes;
+export type profileMediasCreationAttributes = Optional<profileMediasAttributes, "profile_media_id">;
 
-export class profileMedias extends Model<profileMediasAttributes, profileMediasCreationAttributes> implements profileMediasAttributes {
+export class profileMedias extends Model<profileMediasAttributes | profileMediasCreationAttributes> implements profileMediasAttributes {
   profile_media_id!: string;
   user_id!: string;
   profile_media_type_id!: string;
@@ -40,6 +40,7 @@ export class profileMedias extends Model<profileMediasAttributes, profileMediasC
     profile_media_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
     user_id: {
@@ -74,7 +75,7 @@ export class profileMedias extends Model<profileMediasAttributes, profileMediasC
     sequelize,
     tableName: 'profile_medias',
     schema: 'public',
-    timestamps: false,
+    timestamps: false,updatedAt: false,
     indexes: [
       {
         name: "profile_medias_pkey",
