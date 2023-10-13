@@ -6,7 +6,8 @@ import "./config/passportConfig";
 import dotenv from 'dotenv';
 import profileRoutes from "./routes/profileRoutes";
 import {jwtMiddleware, refreshMiddleware} from "./middlewares/jwtMiddleware";
-import {checkProfileCompletion} from "./middlewares/checkProfileCompletion";
+import morgan from 'morgan';
+
 dotenv.config();
 
 const app = express();
@@ -18,6 +19,27 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize passport
 app.use(passport.initialize());
+
+
+morgan.token('emoji', (req, res) => {
+    switch (req.method) {
+        case 'GET':
+            return '📄';
+        case 'POST':
+            return '✉️';
+        case 'PUT':
+            return '🔄';
+        case 'DELETE':
+            return '❌';
+        default:
+            return '🔍';
+    }
+});
+
+const formatWithEmoji = ':emoji :remote-addr - :remote-user [:date[clf]] ' +
+    ':method :url :status :response-time ms - :res[content-length]';
+
+app.use(morgan(formatWithEmoji));
 
 // Your routes go here
 app.get('/', (req: Request, res: Response) => {
@@ -37,7 +59,7 @@ app.use((err:any, req:any, res:any, next:any) => {
 
 sequelize.authenticate()
     .then(() => {
-        console.log('Database connection has been established successfully.');
+        console.log('Database connection has been established successfully.\n');
     })
     .catch(err => {
         console.error('Unable to connect to the database:', err);
