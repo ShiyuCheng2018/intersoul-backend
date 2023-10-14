@@ -104,6 +104,8 @@ export function initModels(sequelize: Sequelize) {
   const body_types = _body_types.initModel(sequelize);
   const preferences = _preferences.initModel(sequelize);
 
+  users.belongsTo(body_types, { as: "body_type", foreignKey: "body_type_id"});
+  body_types.hasMany(users, { as: "users", foreignKey: "body_type_id"});
   messages.belongsTo(chats, { as: "chat", foreignKey: "chat_id"});
   chats.hasMany(messages, { as: "messages", foreignKey: "chat_id"});
   users.belongsTo(genders, { as: "gender", foreignKey: "gender_id"});

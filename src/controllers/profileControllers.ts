@@ -5,7 +5,7 @@ import {getMaxMediaOrderForUser} from "../helper/profileHelper";
 import {Sequelize, Op} from "sequelize";
 import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelper";
 import {locations} from "../models/locations";
-import {preferences} from "../models/init-models";
+import {interactions, interactionsAttributes, preferences} from "../models/init-models";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
@@ -28,7 +28,6 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
             order: startingOrder + 1 // Only increment by 1 since it's one file
         };
 
-        // Assuming you're using Sequelize:
         await profileMedias.create(mediaToSave);
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
 
@@ -79,7 +78,7 @@ export const putProfileDetails = async (req: any, res: Response) => {
     const userId = req.user?.userId;
 
     // Retrieve the new details from the request body
-    const { userName, dateOfBirth, genderId, profileDescription } = req.body;
+    const { userName, dateOfBirth, genderId, profileDescription, height, bodyType } = req.body;
 
     // Input validation
     if (!userName || !dateOfBirth || !genderId || !profileDescription) {
@@ -100,11 +99,14 @@ export const putProfileDetails = async (req: any, res: Response) => {
         userToUpdate.date_of_birth = dateOfBirth;
         userToUpdate.gender_id = genderId;
         userToUpdate.profile_description = profileDescription;
+        userToUpdate.height = height;
+        userToUpdate.body_type_id = bodyType;
 
         // Save the updated user details
         await userToUpdate.save();
 
-        return res.status(200).json({ message: "Profile details updated successfully" });
+        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
+        return res.status(200).json({ message: "Profile details updated successfully", isProfileComplete});
     } catch (error) {
         console.error("Error updating profile details:", error);
         return res.status(500).json({ message: "An error occurred while updating profile details" });
@@ -164,5 +166,78 @@ export const putPreferences = async (req: any, res: Response) => {
         return res.status(200).json({ success: true, message: "Preferences updated successfully." });
     } catch (error:any) {
         return res.status(500).json({ success: false, message: "Error updating preferences.", error: error.message });
+    }
+}
+
+export const fetchProfiles = async (req: any, res: Response) => {
+    const userId = req.user.userId;
+
+    try {
+        const user = await users.findOne({ where: { user_id: userId } });
+        if(!user){
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        if (user && !user.is_profile_complete) {
+            return res.status(200).json({ success: true, message: "Complete your profile to see others and to be seen.", profiles: [] });
+        }
+
+        // Get user preferences
+        const userPreference = await preferences.findOne({ where: { user_id: userId } });
+
+        if (!userPreference) {
+            return res.status(404).json({ success: false, message: "No preference record found for the user." });
+        }
+
+        // Construct query based on user preference
+        let query: any = {};
+
+        query.is_profile_complete = true;
+
+        if (userPreference.gender_preference_id) {
+            query.gender_id = userPreference.gender_preference_id;
+        }
+
+        if (userPreference.body_type_preference_id) {
+            query.body_type_id = userPreference.body_type_preference_id;
+        }
+
+        if (userPreference.min_age && userPreference.max_age) {
+            Sequelize.literal(`EXTRACT(YEAR FROM AGE(NOW(), date_of_birth)) BETWEEN ${userPreference.min_age} AND ${userPreference.max_age}`);
+        }
+
+        if (userPreference.min_height && userPreference.max_height) {
+            query.height = { [Op.between]: [userPreference.min_height, userPreference.max_height] };
+        }
+
+        // Get list of users that the current user has interacted with
+        const interactionsInitiatedByCurrentUser = await interactions.findAll({
+            where: {
+                user1_id: userId
+            }
+        });
+
+        // Get list of users who unmatched with the current user
+        const unmatchedByOthers = await interactions.findAll({
+            where: {
+                user2_id: userId,
+                interaction_type_id: 'b8a97ca4-0ceb-4edc-ac8f-4570a1ff1a4a' // Replace 'UNMATCHED' with its actual value if different
+            }
+        });
+
+        const interactedUserIds = interactionsInitiatedByCurrentUser.map((interaction:interactionsAttributes) => interaction.user2_id);
+        const unmatchedUserIds = unmatchedByOthers.map((interaction:interactionsAttributes)  => interaction.user1_id);
+
+        // Exclude interacted users and users who unmatched with the current user
+        query.user_id = {
+            [Op.notIn]: [...interactedUserIds, ...unmatchedUserIds, userId]
+        };
+
+        // Fetch users matching the criteria
+        const fetchingUsers = await users.findAll({ where: query });
+
+        return res.status(200).json({ success: true, fetchingUsers });
+    } catch (error: any) {
+        return res.status(500).json({ success: false, message: "Error fetching profiles.", error: error.message });
     }
 }

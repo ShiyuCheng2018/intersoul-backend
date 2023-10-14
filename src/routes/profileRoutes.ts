@@ -3,7 +3,7 @@ import {
     putProfileDetails,
     postProfileMedia,
     deleteProfileMedia,
-    postProfileLocation, putPreferences
+    postProfileLocation, putPreferences, fetchProfiles
 } from "../controllers/profileControllers";
 import uploadMedia from "../middlewares/uploadProfileMedias";
 
@@ -13,7 +13,8 @@ router.post("/medias",uploadMedia, postProfileMedia);
 router.delete("/medias/:mediaId",deleteProfileMedia);
 router.put("/details", putProfileDetails);
 router.post("/location", postProfileLocation);
-router.put("/preferences", putPreferences)
+router.put("/preferences", putPreferences);
+router.get("/profiles", fetchProfiles)
 
 
 export default router;

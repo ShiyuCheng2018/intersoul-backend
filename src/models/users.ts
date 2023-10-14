@@ -10,6 +10,7 @@ import type { profileMedias, profileMediasId } from './profile_medias';
 import type { reports, reportsId } from './reports';
 import type { settings, settingsId } from './settings';
 import type { verifications, verificationsId } from './verifications';
+import {body_types, body_typesId} from "./body_types";
 
 export interface usersAttributes {
   user_id: string;
@@ -24,11 +25,13 @@ export interface usersAttributes {
   gender_id?: string;
   profile_description?: string;
   is_profile_complete: boolean;
+  height?: number;
+  body_type_id?: string;
 }
 
 export type usersPk = "user_id";
 export type usersId = users[usersPk];
-export type usersOptionalAttributes = "user_id" | "hashed_password" | "user_name" | "date_of_birth" | "created_at" | "updated_at" | "provider" | "provider_id" | "gender_id" | "profile_description";
+export type usersOptionalAttributes = "user_id" | "hashed_password" | "user_name" | "date_of_birth" | "created_at" | "updated_at" | "provider" | "provider_id" | "gender_id" | "profile_description" | "height" | "body_type_id";
 export type usersCreationAttributes = Optional<usersAttributes, usersOptionalAttributes>;
 
 export class users extends Model<usersAttributes | usersCreationAttributes> implements usersAttributes {
@@ -44,7 +47,14 @@ export class users extends Model<usersAttributes | usersCreationAttributes> impl
   gender_id?: string;
   profile_description?: string;
   is_profile_complete!: boolean;
+  height?: number;
+  body_type_id?: string;
 
+  // users belongsTo body_types via body_type_id
+  body_type!: body_types;
+  getBody_type!: Sequelize.BelongsToGetAssociationMixin<body_types>;
+  setBody_type!: Sequelize.BelongsToSetAssociationMixin<body_types, body_typesId>;
+  createBody_type!: Sequelize.BelongsToCreateAssociationMixin<body_types>;
   // users belongsTo genders via gender_id
   gender!: genders;
   getGender!: Sequelize.BelongsToGetAssociationMixin<genders>;
@@ -256,6 +266,18 @@ export class users extends Model<usersAttributes | usersCreationAttributes> impl
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    },
+    height: {
+      type: DataTypes.SMALLINT,
+      allowNull: true
+    },
+    body_type_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'body_types',
+        key: 'body_type_id'
+      }
     }
   }, {
     sequelize,
