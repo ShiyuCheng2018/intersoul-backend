@@ -14,7 +14,7 @@ export interface interactionsAttributes {
 
 export type interactionsPk = "interaction_id";
 export type interactionsId = interactions[interactionsPk];
-export type interactionsOptionalAttributes = "created_at" | "updated_at";
+export type interactionsOptionalAttributes = "interaction_id" | "created_at" | "updated_at";
 export type interactionsCreationAttributes = Optional<interactionsAttributes, interactionsOptionalAttributes>;
 
 export class interactions extends Model<interactionsAttributes | interactionsCreationAttributes> implements interactionsAttributes {

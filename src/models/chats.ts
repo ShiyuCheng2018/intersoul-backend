@@ -14,7 +14,7 @@ export interface chatsAttributes {
 
 export type chatsPk = "chat_id";
 export type chatsId = chats[chatsPk];
-export type chatsOptionalAttributes = "created_at" | "updated_at";
+export type chatsOptionalAttributes = "chat_id" | "created_at" | "updated_at";
 export type chatsCreationAttributes = Optional<chatsAttributes, chatsOptionalAttributes>;
 
 export class chats extends Model<chatsAttributes | chatsCreationAttributes> implements chatsAttributes {
