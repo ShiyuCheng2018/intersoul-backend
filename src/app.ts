@@ -8,6 +8,7 @@ import profileRoutes from "./routes/profileRoutes";
 import {jwtMiddleware, refreshMiddleware} from "./middlewares/jwtMiddleware";
 import morgan from 'morgan';
 import {sendResponse} from "./helper/sendResponse";
+import entityRouters from "./routes/entityRouters";
 
 dotenv.config();
 
@@ -51,7 +52,8 @@ app.get('/', (req: Request, res: Response) => {
 
 
 app.use('/auth', authRoutes);
-app.use("/profile", jwtMiddleware,refreshMiddleware, profileRoutes)
+app.use("/profile", jwtMiddleware,refreshMiddleware, profileRoutes);
+app.use("/entities", jwtMiddleware,refreshMiddleware, entityRouters);
 
 // Error handler
 app.use((err:any, req:any, res:any, next:any) => {

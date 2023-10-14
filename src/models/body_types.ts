@@ -34,7 +34,8 @@ export class body_types extends Model<body_typesAttributes | body_typesCreationA
     sequelize,
     tableName: 'body_types',
     schema: 'public',
-    timestamps: true,
+    updatedAt: 'updated_at',
+    createdAt: false,
     indexes: [
       {
         name: "body_types_pkey",
