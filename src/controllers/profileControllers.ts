@@ -6,18 +6,19 @@ import {Sequelize, Op} from "sequelize";
 import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelper";
 import {locations} from "../models/locations";
 import {interactions, interactionsAttributes, preferences} from "../models/init-models";
+import {sendResponse} from "../helper/sendResponse";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     console.log(req.body)
     try {
         if (!req.file) {
-            return res.status(400).send({ message: 'No files uploaded.' });
+            return sendResponse(res, 400, false, "No files uploaded.", null, null);
         }
 
         const startingOrder = await getMaxMediaOrderForUser(req.user.userId);
 
         if(startingOrder === 6){
-            return res.status(400).send({ message: 'Your reached the maximum profile media uploading.' });
+            return sendResponse(res, 400, false, "You reached the maximum profile media uploading.", null, null);
         }
 
         const mediaToSave = {
@@ -29,9 +30,10 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
         };
 
         await profileMedias.create(mediaToSave);
+        const userProfileMedias = await profileMedias.findAll({ where: { user_id: req.user.userId } });
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
 
-        res.status(200).send({ message: 'Medias uploaded successfully.', medias: mediaToSave, isProfileComplete });
+        return sendResponse(res, 200, true, "Media uploaded successfully", {userProfileMedias, isProfileComplete}, null)
     } catch (error) {
         next(error);
     }
@@ -43,7 +45,7 @@ export const deleteProfileMedia = async (req: any, res: Response, next: any) => 
     try {
         const media = await profileMedias.findOne({ where: { profile_media_id: mediaId } });
         if (!media) {
-            return res.status(404).send({ message: 'Media not found.' });
+            return sendResponse(res, 404, false, "Media not found", null, null);
         }
 
         // Use AWS SDK to delete `media.media_path` from your S3 bucket
@@ -62,7 +64,7 @@ export const deleteProfileMedia = async (req: any, res: Response, next: any) => 
 
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
 
-        res.status(200).send({ message: 'Media deleted successfully.', isProfileComplete});
+        return sendResponse(res, 200, true, "Media deleted successfully", null, isProfileComplete)
     } catch (error) {
         next(error);
     }
@@ -71,7 +73,7 @@ export const deleteProfileMedia = async (req: any, res: Response, next: any) => 
 export const putProfileDetails = async (req: any, res: Response) => {
 
     if(req.user === undefined){
-        return res.status(401).json({ message: "authorization denied" });
+        return sendResponse(res, 401, false, "authorization denied", null, null)
     }
 
     // Retrieve the userId from JWT payload
@@ -82,7 +84,7 @@ export const putProfileDetails = async (req: any, res: Response) => {
 
     // Input validation
     if (!userName || !dateOfBirth || !genderId || !profileDescription) {
-        return res.status(400).json({ message: "Required fields are missing" });
+        return sendResponse(res, 400, false, "Required fields are missing", null, null);
     }
 
     try {
@@ -91,7 +93,7 @@ export const putProfileDetails = async (req: any, res: Response) => {
 
         // If user doesn't exist
         if (!userToUpdate) {
-            return res.status(404).json({ message: "User not found" });
+            return sendResponse(res, 404, false, "User not found", null, null);
         }
 
         // Update the user details
@@ -106,10 +108,10 @@ export const putProfileDetails = async (req: any, res: Response) => {
         await userToUpdate.save();
 
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
-        return res.status(200).json({ message: "Profile details updated successfully", isProfileComplete});
-    } catch (error) {
+        return sendResponse(res, 200, true, "Profile details updated successfully", {isProfileComplete}, null)
+    } catch (error:any) {
         console.error("Error updating profile details:", error);
-        return res.status(500).json({ message: "An error occurred while updating profile details" });
+        return sendResponse(res, 500, false, "An error occurred while updating profile details", null, error.message)
     }
 }
 
@@ -130,10 +132,10 @@ export const postProfileLocation = async (req: any, res: Response) => {
 
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
 
-        res.status(200).json({ message: "Location updated/added successfully.", isProfileComplete });
-    } catch (error) {
+        return sendResponse(res, 200, true, "Location updated/added successfully.", {isProfileComplete}, null)
+    } catch (error:any) {
         console.error("Error handling location: ", error);
-        res.status(500).json({ error: "Failed to handle location" });
+        return sendResponse(res, 500, false, "Failed to handle location", null, error.message)
     }
 }
 
@@ -148,7 +150,7 @@ export const putPreferences = async (req: any, res: Response) => {
 
         // If no preference record is found for the user, handle it (maybe create one with default values or send an error response)
         if (!preference) {
-            return res.status(404).json({ success: false, message: "No preference record found for the user." });
+            return sendResponse(res, 404, false,"No preference record found for the user.");
         }
 
         // Update the preference
@@ -163,9 +165,9 @@ export const putPreferences = async (req: any, res: Response) => {
 
         await preference.save();
 
-        return res.status(200).json({ success: true, message: "Preferences updated successfully." });
+        return sendResponse(res, 200, true, "Preferences updated successfully.");
     } catch (error:any) {
-        return res.status(500).json({ success: false, message: "Error updating preferences.", error: error.message });
+        return sendResponse(res, 500, false, "Error updating preferences.",null, error.message);
     }
 }
 
@@ -175,18 +177,18 @@ export const fetchProfiles = async (req: any, res: Response) => {
     try {
         const user = await users.findOne({ where: { user_id: userId } });
         if(!user){
-            return res.status(404).json({ success: false, message: "User not found." });
+            return sendResponse(res, 404, false, "User not found.", []);
         }
 
         if (user && !user.is_profile_complete) {
-            return res.status(200).json({ success: true, message: "Complete your profile to see others and to be seen.", profiles: [] });
+            return sendResponse(res, 200, true, "Complete your profile to see others and to be seen.", []);
         }
 
         // Get user preferences
         const userPreference = await preferences.findOne({ where: { user_id: userId } });
 
         if (!userPreference) {
-            return res.status(404).json({ success: false, message: "No preference record found for the user." });
+            return sendResponse(res, 404, false, "No preference record found for the user.", []);
         }
 
         // Construct query based on user preference
@@ -236,8 +238,8 @@ export const fetchProfiles = async (req: any, res: Response) => {
         // Fetch users matching the criteria
         const fetchingUsers = await users.findAll({ where: query });
 
-        return res.status(200).json({ success: true, fetchingUsers });
+        return sendResponse(res, 200, true, "Profiles fetched successfully.", {user: fetchingUsers});
     } catch (error: any) {
-        return res.status(500).json({ success: false, message: "Error fetching profiles.", error: error.message });
+        return sendResponse(res, 500, false, "Error fetching profiles.", null,error.message);
     }
 }

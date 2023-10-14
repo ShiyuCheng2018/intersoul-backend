@@ -1,5 +1,6 @@
 import passport from 'passport';
 import {preferences} from "../models/preferences";
+import {sendResponse} from "../helper/sendResponse";
 
 export const login = (req: any, res: any, next: any) => {
     passport.authenticate('local-login', (err: any, authObject: any, info: any) => {
@@ -8,13 +9,13 @@ export const login = (req: any, res: any, next: any) => {
         }
         if (!authObject) {
             // Authentication failed
-            return res.status(401).json({ success: false, message: info.message });
+            return sendResponse(res, 401, false, info.message);
         }
 
         const { user, accessToken } = authObject;
 
         // Authentication succeeded
-        return res.json({ success: true, user, accessToken });
+        return sendResponse(res, 200, true, "User logged in successfully.", {user, accessToken}, null);
     })(req, res, next);
 };
 
@@ -24,7 +25,7 @@ export const signup =(req:any, res:any, next:any) => {
             return next(err);
         }
         if (!authObject) {
-            return res.status(400).json({ success: false, message: info.message });
+            return sendResponse(res, 400, false, info.message);
         }
 
         const { newUser, accessToken } = authObject;
@@ -40,12 +41,12 @@ export const signup =(req:any, res:any, next:any) => {
                 min_height: 0,
                 max_height: 300,
             });
-        } catch (error) {
-            return res.status(500).json({ success: false, message: "Error setting default preferences." });
+        } catch (error:any) {
+            return sendResponse(res, 500, false, "Error setting default preferences.", null, error.message);
         }
 
         // Optionally log the user in or send a success message
-        return res.status(201).json({ success: true, user:newUser, accessToken});
+        return sendResponse(res, 201, true, "User created successfully.", {user: newUser, accessToken}, null);
     })(req, res, next);
 };
 

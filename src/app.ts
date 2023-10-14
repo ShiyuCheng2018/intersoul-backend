@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import profileRoutes from "./routes/profileRoutes";
 import {jwtMiddleware, refreshMiddleware} from "./middlewares/jwtMiddleware";
 import morgan from 'morgan';
+import {sendResponse} from "./helper/sendResponse";
 
 dotenv.config();
 
@@ -53,7 +54,7 @@ app.use("/profile", jwtMiddleware,refreshMiddleware, profileRoutes)
 // Error handler
 app.use((err:any, req:any, res:any, next:any) => {
     console.error(err.stack);
-    res.status(500).send('Something broke!');
+    return sendResponse(res, 500, false, "Something went wrong.", null, err.message);
 });
 
 
