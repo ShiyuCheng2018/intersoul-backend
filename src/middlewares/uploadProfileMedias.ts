@@ -1,6 +1,7 @@
 import multer from 'multer';
 import { S3Client } from "@aws-sdk/client-s3";
 import multerS3 from 'multer-s3';
+import {logHelper} from "../helper/functionLoggerHelper";
 
 const s3Client = new S3Client({
     region: 'us-east-1',
@@ -16,7 +17,7 @@ const uploadMedia = multer({
         s3: s3Client,
         bucket: process.env.AWS_BUCKET as string,
         key: (req:any, file, cb) => {
-            console.log(req.user)
+            logHelper({ level: "INFO", message: "Uploading media", functionName: "uploadMedia", additionalData: JSON.stringify(req.user) });
             const filename = `profiles/${req.user.userId}/${Date.now()}-${file.originalname}`;
             cb(null, filename);
         }

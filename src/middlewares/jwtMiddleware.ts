@@ -2,12 +2,14 @@ import passport from "passport";
 import {NextFunction} from "express";
 import {oauth} from "../models/oauth";
 import jwt from "jsonwebtoken";
+import {logHelper} from "../helper/functionLoggerHelper";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
 
 // JWT Middleware
 export const jwtMiddleware = (req:any, res:any, next:NextFunction) => {
+    logHelper({ level: "INFO", message: "JWT Middleware", functionName: "jwtMiddleware", additionalData: JSON.stringify(req.user) });
     passport.authenticate('jwt', { session: false }, (err:any, user:any, info:any) => {
         if (err) {
             return res.status(500).send('Internal server error');
@@ -22,6 +24,7 @@ export const jwtMiddleware = (req:any, res:any, next:NextFunction) => {
 
 // Refresh Middleware
 export const refreshMiddleware = async (req: any, res: any, next: NextFunction) => {
+    logHelper({ level: "INFO", message: "Refresh Middleware", functionName: "refreshMiddleware", additionalData: JSON.stringify(req.user) });
     // If req.user exists, this means JWT was valid and there's no need to refresh.
     if (req.user) {
         return next();

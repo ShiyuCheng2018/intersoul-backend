@@ -1,8 +1,10 @@
 import {users} from '../models/users';
 import {locations} from "../models/locations";
 import {profileMedias} from "../models/profile_medias";
+import {logHelper} from "../helper/functionLoggerHelper";
 
 export const checkProfileCompletion = async (req: any, res: any, next: any) => {
+    logHelper({ level: "INFO", message: "Checking profile completion", functionName: "checkProfileCompletion", additionalData: JSON.stringify(req.user) });
     const user_id = req.user.userId; // Use optional chaining here
 
     if (!user_id || req.user) {

@@ -38,7 +38,9 @@ morgan.token('emoji', (req, res) => {
 });
 
 const formatWithEmoji = ':emoji :remote-addr - :remote-user [:date[clf]] ' +
-    ':method :url :status :response-time ms - :res[content-length]';
+    ':method :url :status :response-time ms - :res[content-length]\n' +
+    '=================================================================================================================='
+;
 
 app.use(morgan(formatWithEmoji));
 

@@ -7,9 +7,10 @@ import {checkProfileCompletionHelper} from "../helper/checkProfileCompletionHelp
 import {locations} from "../models/locations";
 import {interactions, interactionsAttributes, preferences} from "../models/init-models";
 import {sendResponse} from "../helper/sendResponse";
+import {logHelper} from "../helper/functionLoggerHelper";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
-    console.log(req.body)
+    logHelper({ level: "INFO", message: "Uploading profile media", functionName: "postProfileMedia", additionalData: JSON.stringify(req.user) });
     try {
         if (!req.file) {
             return sendResponse(res, 400, false, "No files uploaded.", null, null);
@@ -40,6 +41,7 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
 };
 
 export const deleteProfileMedia = async (req: any, res: Response, next: any) => {
+    logHelper({ level: "INFO", message: "Deleting profile media", functionName: "deleteProfileMedia", additionalData: JSON.stringify(req.user)});
     const mediaId = req.params.mediaId;
 
     try {
@@ -71,7 +73,7 @@ export const deleteProfileMedia = async (req: any, res: Response, next: any) => 
 }
 
 export const putProfileDetails = async (req: any, res: Response) => {
-
+    logHelper({level: "INFO", message: "Updating profile details", functionName: "putProfileDetails", additionalData: JSON.stringify(req.user) });
     if(req.user === undefined){
         return sendResponse(res, 401, false, "authorization denied", null, null)
     }
@@ -110,12 +112,12 @@ export const putProfileDetails = async (req: any, res: Response) => {
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
         return sendResponse(res, 200, true, "Profile details updated successfully", {isProfileComplete}, null)
     } catch (error:any) {
-        console.error("Error updating profile details:", error);
         return sendResponse(res, 500, false, "An error occurred while updating profile details", null, error.message)
     }
 }
 
 export const postProfileLocation = async (req: any, res: Response) => {
+    logHelper({level: "INFO", message: "posting/updating profile location", functionName: "postProfileLocation",additionalData: JSON.stringify(req.user)});
     try {
         const userId = req.user.userId; // Get userId from JWT middleware
         const { longitude, latitude, country, state, city } = req.body;
@@ -172,6 +174,7 @@ export const putPreferences = async (req: any, res: Response) => {
 }
 
 export const fetchProfiles = async (req: any, res: Response) => {
+    logHelper({level: "INFO", message: "Fetching profiles", functionName:"fetchProfiles", additionalData: JSON.stringify(req.user)});
     const userId = req.user.userId;
 
     try {

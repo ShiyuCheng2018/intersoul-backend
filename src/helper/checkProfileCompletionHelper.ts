@@ -15,12 +15,11 @@ export const checkProfileCompletionHelper = async (userId: string):Promise<Boole
         user.height && user.body_type_id && userLocation?.latitude && userLocation?.longitude && userLocation?.country &&
         userLocation?.city && profileMediaCount > 0;
 
-    console.log(user?.user_name, user?.date_of_birth, user?.profile_description,
-        user?.height, user?.body_type_id, userLocation?.latitude, userLocation?.longitude, userLocation?.country,
-        userLocation?.city , profileMediaCount > 0)
+    // console.log(user?.user_name, user?.date_of_birth, user?.profile_description,
+    //     user?.height, user?.body_type_id, userLocation?.latitude, userLocation?.longitude, userLocation?.country,
+    //     userLocation?.city , profileMediaCount > 0)
 
     const isCompleteResult = !!isComplete;
-    console.log(isComplete)
     // If the computed value of isComplete is different from what's in the DB, update it.
     if (user?.is_profile_complete !== isCompleteResult) {
         await user?.update({ is_profile_complete: isCompleteResult });

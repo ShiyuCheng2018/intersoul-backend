@@ -1,8 +1,10 @@
 import passport from 'passport';
 import {preferences} from "../models/preferences";
 import {sendResponse} from "../helper/sendResponse";
+import {logHelper} from "../helper/functionLoggerHelper";
 
 export const login = (req: any, res: any, next: any) => {
+    logHelper({ level: "INFO", message: "Trying to login", functionName: "login", additionalData: JSON.stringify(req.user)})
     passport.authenticate('local-login', (err: any, authObject: any, info: any) => {
         if (err) {
             return next(err);  // Error during authentication
@@ -20,6 +22,7 @@ export const login = (req: any, res: any, next: any) => {
 };
 
 export const signup =(req:any, res:any, next:any) => {
+    logHelper({ level: "INFO", message: "Trying to signup", functionName: "signup", additionalData: JSON.stringify(req.user) });
     passport.authenticate('local-signup', async (err:any, authObject:any, info:any) => {
         if (err) {
             return next(err);
