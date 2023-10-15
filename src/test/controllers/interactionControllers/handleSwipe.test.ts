@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import {handleSwipe} from '../controllers/interactionControllers';
-import { interactions, chats } from '../models/init-models';
-import {getKeyByValueFromInteractionTypeEntity} from "../entities/interactionTypeEntity";
+import {handleSwipe} from '../../../controllers/interactionControllers';
+import { interactions, chats } from '../../../models/init-models';
+import {getKeyByValueFromInteractionTypeEntity} from "../../../entities/interactionTypeEntity";
 
 type HandleSwipeRequest = {
     user: {

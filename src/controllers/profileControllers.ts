@@ -22,7 +22,7 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
             return sendResponse(res, 400, false, "You reached the maximum profile media uploading.", null, null);
         }
 
-        const mediaToSave = {
+        const mediaToSave:{user_id: string, profile_media_type_id: string, media_path: string,upload_date:Date,order:number} = {
             user_id: req.user.userId,
             profile_media_type_id: req.body.mediaType,
             media_path: req.file.location, // The URL that S3 returns
@@ -30,10 +30,15 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
             order: startingOrder + 1 // Only increment by 1 since it's one file
         };
 
-        await profileMedias.create(mediaToSave);
-        const userProfileMedias = await profileMedias.findAll({ where: { user_id: req.user.userId } });
-        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
-
+        await profileMedias.create(mediaToSave).catch(e => {
+            console.error("Error during profileMedias.create: ", e);
+        });
+        const userProfileMedias = await profileMedias.findAll({ where: { user_id: req.user.userId } }).catch(e => {
+            console.error("Error during await profileMedias.findAll", e);
+        });
+        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId).catch(e => {
+            console.error("Error during await checkProfileCompletionHelper", e);
+        });
         return sendResponse(res, 200, true, "Media uploaded successfully", {userProfileMedias, isProfileComplete}, null)
     } catch (error) {
         next(error);
