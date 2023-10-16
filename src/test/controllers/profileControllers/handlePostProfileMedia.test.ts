@@ -1,23 +1,24 @@
-import { postProfileMedia } from '../../../controllers/profileControllers';
 import {Response} from "express";
+import {postProfileMedia} from "../../../controllers/profileControllers";
 import {sendResponse} from "../../../helper/sendResponse";
 import {getMaxMediaOrderForUser} from "../../../helper/profileHelper";
-import {profileMedias} from "../../../models/profile_medias";
-import {checkProfileCompletionHelper} from "../../../helper/checkProfileCompletionHelper";
 import {getKeyByValueFromMediaTypeEntity} from "../../../entities/mediaTypeEntity";
+import {profileMedias} from "../../../models/init-models";
+import {checkProfileCompletionHelper} from "../../../helper/checkProfileCompletionHelper";
+
 
 // Mocking external functions
-jest.mock('../helper/profileHelper', () => ({getMaxMediaOrderForUser: jest.fn()}));
-jest.mock('../models/profile_medias', () => ({
+jest.mock('../../../helper/profileHelper', () => ({getMaxMediaOrderForUser: jest.fn()}));
+jest.mock('../../../models/profile_medias', () => ({
     profileMedias:{
         create: jest.fn(),
         findAll: jest.fn(),
     }
 }));
-jest.mock('../helper/sendResponse', () => ({
+jest.mock('../../../helper/sendResponse', () => ({
     sendResponse: jest.fn(),
 }));
-jest.mock('../helper/checkProfileCompletionHelper', () => ({checkProfileCompletionHelper: jest.fn()}));
+jest.mock('../../../helper/checkProfileCompletionHelper', () => ({checkProfileCompletionHelper: jest.fn()}));
 
 // Mock implementations for request and response objects
 const mockRequest = (data: any = {}) => ({

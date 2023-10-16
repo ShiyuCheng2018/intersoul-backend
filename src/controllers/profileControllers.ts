@@ -185,7 +185,7 @@ export const fetchProfiles = async (req: any, res: Response) => {
     try {
         const user = await users.findOne({ where: { user_id: userId } });
         if(!user){
-            return sendResponse(res, 404, false, "User not found.", []);
+            return sendResponse(res, 404, false, "User not found.", [], "User not found.");
         }
 
         if (user && !user.is_profile_complete) {

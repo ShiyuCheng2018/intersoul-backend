@@ -14,7 +14,7 @@ type HandleSwipeRequest = {
 }
 
 // Mocking the database models
-jest.mock('../models/init-models', () => ({
+jest.mock('../../../models/init-models', () => ({
     interactions: {
         create: jest.fn(),
         findOne: jest.fn(),

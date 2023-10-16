@@ -3,8 +3,8 @@ import {profileMedias} from "../../../models/init-models";
 import {checkProfileCompletionHelper} from "../../../helper/checkProfileCompletionHelper";
 import {deleteProfileMedia} from "../../../controllers/profileControllers"; // Assuming you're using Sequelize
 
-jest.mock('../helper/checkProfileCompletionHelper', () => ({checkProfileCompletionHelper: jest.fn()}));
-jest.mock('../models/profile_medias', () => ({
+jest.mock('../../../helper/checkProfileCompletionHelper', () => ({checkProfileCompletionHelper: jest.fn()}));
+jest.mock('../../../models/profile_medias', () => ({
     profileMedias:{
         create: jest.fn(),
         findAll: jest.fn(),
