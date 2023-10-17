@@ -10,6 +10,7 @@ import morgan from 'morgan';
 import {sendResponse} from "./helper/sendResponse";
 import entityRouters from "./routes/entityRouters";
 import interactionRoutes from "./routes/interactionRoutes";
+import chatRoutes from "./routes/chatRoutes";
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use('/auth', authRoutes);
 app.use("/profile", jwtMiddleware,refreshMiddleware, profileRoutes);
 app.use("/entities", jwtMiddleware,refreshMiddleware, entityRouters);
 app.use("/interaction", jwtMiddleware,refreshMiddleware, interactionRoutes);
+app.use('/api', jwtMiddleware,refreshMiddleware, chatRoutes);
 
 // Error handler
 app.use((err:any, req:any, res:any, next:any) => {
@@ -64,15 +66,4 @@ app.use((err:any, req:any, res:any, next:any) => {
 });
 
 
-sequelize.authenticate()
-    .then(() => {
-        console.log('Database connection has been established successfully.\n');
-    })
-    .catch(err => {
-        console.error('Unable to connect to the database:', err);
-    });
-
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+export default app;

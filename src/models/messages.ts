@@ -22,7 +22,7 @@ export type messagesId = messages[messagesPk];
 export type messagesOptionalAttributes = "message_id" | "expiry_time";
 export type messagesCreationAttributes = Optional<messagesAttributes, messagesOptionalAttributes>;
 
-export class messages extends Model<messagesAttributes, messagesCreationAttributes> implements messagesAttributes {
+export class messages extends Model<messagesAttributes| messagesCreationAttributes> implements messagesAttributes {
   message_id!: number;
   chat_id!: string;
   sender_id!: string;

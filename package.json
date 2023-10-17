@@ -4,9 +4,9 @@
   "description": "a welcoming dating app that has never been this fun and genuine.",
   "main": "src/app.ts",
   "scripts": {
-    "start": "ts-node src/app.ts",
+    "start": "ts-node src/server.ts",
     "dev": "nodemon",
-    "sequelize-auto": "sequelize-auto -caseModel c -o \"./src/models\" -d intersoul -h localhost -u shiyucheng -p 5432 -x 1210155474 -e postgres -t genders -l ts",
+    "sequelize-auto": "sequelize-auto -caseModel c -o \"./models\" -d intersoul -h localhost -u shiyucheng -p 5432 -x 1210155474 -e postgres -t genders -l ts",
     "test": "jest"
   },
   "author": "intersoul - shiyu",
@@ -14,6 +14,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.428.0",
     "@aws-sdk/s3-request-presigner": "^3.428.0",
+    "@types/socket.io": "^3.0.2",
     "aws-sdk": "^2.1473.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.3.1",
@@ -29,7 +30,8 @@
     "passport-local": "^1.0.0",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.33.0"
+    "sequelize": "^6.33.0",
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.2",

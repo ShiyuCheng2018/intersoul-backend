@@ -5,11 +5,11 @@ import {
     deleteProfileMedia,
     postProfileLocation, putPreferences, fetchProfiles
 } from "../controllers/profileControllers";
-import uploadMedia from "../middlewares/uploadProfileMedias";
+import {generateUploadMiddleware} from "../middlewares/uploadProfileMedias";
 
 const router = Router();
 
-router.post("/medias",uploadMedia, postProfileMedia);
+router.post("/medias",generateUploadMiddleware("profile"), postProfileMedia);
 router.delete("/medias/:mediaId",deleteProfileMedia);
 router.put("/details", putProfileDetails);
 router.post("/location", postProfileLocation);
