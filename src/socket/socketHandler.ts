@@ -3,6 +3,7 @@ import chatEvents  from './events/chatEvents';
 
 export interface InterSoulSocket extends Socket {
     chatRoom?: string; // or any other properties you'd like to add
+    userId?:string
 }
 
 export const socketHandler = (socket: InterSoulSocket, io: Server) => {

@@ -29,7 +29,7 @@ export default function (socket: InterSoulSocket, io: Server){
     socket.on('newVoiceMessage', async (data: { voiceLink: string, senderId: string }) => {
         const recipient = await isUserPartOfChat(socket.chatRoom as string, data.senderId);
         if (!recipient) {
-            // handle error
+            socket.emit('error', { message: 'You are not part of this chat.' });
             return;
         }
 
@@ -54,26 +54,39 @@ export default function (socket: InterSoulSocket, io: Server){
             // Update the message status to 'delivered' now that it has been sent to the client
             await message.update({ message_status: 'delivered' }, { where: { message_id: message.message_id }});
 
-
+            // Notify the sender that the message has been delivered
+            io.to(data.senderId).emit("messageDelivered", { messageId: message.message_id });
 
         } catch (error) {
             console.error('Error sending voice message:', error);
-            // Handle error, possibly emit an error event back to the client
+            socket.emit('error', { message: 'Failed to send voice message. Try again later.' });
         }
     });
 
     socket.on('messagesRead', async (data:{chatRoomId:string, recipientId: string}) => {
         try {
-            await messages.update({ message_status: 'read' }, {
+            const updatedMessages = await messages.update({ message_status: 'read' }, {
                 where: {
                     chat_id: data.chatRoomId,
                     recipient_id: data.recipientId,
                     message_status: {[Op.ne]: MessageStatus.READ}
-                }
+                },
+                returning: true
             });
+            // Notify the sender that the message has been read
+            const senderId = updatedMessages[1][0]?.sender_id;
+            if (senderId) {
+                io.to(senderId).emit("messageRead", { chatId: data.chatRoomId });
+            }
         } catch (error) {
             console.error("Error updating message status to read:", error);
         }
+    });
+
+    socket.on('leaveChat', (chatRoomId: string) => {
+        socket.leave(chatRoomId);
+        // You can also emit an event here if you want other members of the chat room to know that someone left
+        io.to(chatRoomId).emit("userLeft", { userId: socket.userId});  // Assuming you have userId on the socket
     });
 }
 
