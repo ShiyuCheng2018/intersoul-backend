@@ -8,8 +8,21 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
 
 // JWT Middleware
-export const jwtMiddleware = (req:any, res:any, next:NextFunction) => {
+export const jwtMiddleware = async (req:any, res:any, next:NextFunction) => {
     logHelper({ level: "INFO", message: "JWT Middleware", functionName: "jwtMiddleware", additionalData: JSON.stringify(req.user) });
+
+    // Decode JWT to get userId
+    const decoded = jwt.decode(req.header('Authorization')?.split('Bearer ')[1]) as any;
+
+    if (!decoded || !decoded.userId) {
+        return res.status(401).send('Invalid token.');
+    }else {
+        const tokenData = await oauth.findOne({ where: { user_id: decoded.userId } });
+        if (tokenData!.access_token !== req.header('Authorization')?.split('Bearer ')[1]){
+            return res.status(401).send('Expired access token.');
+        }
+    }
+
     passport.authenticate('jwt', { session: false }, (err:any, user:any, info:any) => {
         if (err) {
             return res.status(500).send('Internal server error');
@@ -73,7 +86,7 @@ export const refreshMiddleware = async (req: any, res: any, next: NextFunction) 
 
         // Attach the new access token to the request for the next middleware
         req.headers.authorization = 'Bearer ' + newAccessToken;
-
+        res.setHeader('X-New-Access-Token', newAccessToken);
         // Set the user in the request for subsequent middlewares
         req.user = payload;
 

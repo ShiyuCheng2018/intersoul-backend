@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { users } from '../models/init-models';
+import {locations, profileMedias, users} from '../models/init-models';
 import {verifications} from "../models/verifications";
 import {oauth} from "../models/oauth";
 import bcrypt from 'bcryptjs';
@@ -80,18 +80,21 @@ passport.use("local-login", new LocalStrategy(
     async (email, password, done) => {
         console.log(email, password)
         try {
-            const user = await users.findOne({ where: { email: email } });
+            const _user = await users.findOne({ where: { email: email}, attributes: { exclude: ['createdAt', 'updatedAt'] }});
 
-            if (!user) {
+            if (!_user) {
                 return done(null, false, { message: 'Incorrect email.' });
             }
-            if(user.hashed_password){
-                if (!await bcrypt.compare(password, user.hashed_password)) {
+            if(_user.hashed_password){
+                if (!await bcrypt.compare(password, _user.hashed_password)) {
                     return done(null, false, { message: 'Incorrect password.' });
                 }
             }else {
                 return done(null, false, { message: 'You might have an account with a social login.' });
             }
+
+
+            const { hashed_password , ...user } = _user.get();
 
             // If the user is authenticated successfully:
             const payload = {
@@ -110,7 +113,7 @@ passport.use("local-login", new LocalStrategy(
             });
 
             // Save refresh token to the database
-            let userOAuth = await oauth.findOne({ where: { user_id: user.user_id } });
+            let userOAuth = await oauth.findOne({ where: { user_id: user.user_id }});
 
             if (userOAuth) {
                 await userOAuth.update({
@@ -121,7 +124,15 @@ passport.use("local-login", new LocalStrategy(
                 });
             }else  return done(null, false, { message: 'something wrong with your account, please contact us immediately.' });
 
-            return done(null, { user, accessToken});
+            let _profileMedias: Array<profileMedias> = [];
+            let location: locations | null = null;
+            if(user.is_profile_complete){
+                _profileMedias = await profileMedias.findAll({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt', 'upload_date'] }})
+                location = await locations.findOne({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt'] }}) as locations;
+                if(_profileMedias.length === 0 || !location) return done(null, false, { message: 'something wrong with your account, please contact us immediately.' });
+            }
+            console.log(_profileMedias)
+            return done(null, { user:{...user, profileMedias: _profileMedias, location}, accessToken});
         } catch (err) {
             return done(err);
         }
@@ -180,7 +191,6 @@ const opts = {
 
 
 passport.use("jwt",new JwtStrategy(opts, async (req:any, jwt_payload:any, done:any) => {
-    console.log("jwt_payload: ", jwt_payload)
     try {
         const user = await users.findOne({ where: { user_id: jwt_payload.userId } });
         if (!user) {
