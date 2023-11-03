@@ -104,12 +104,12 @@ export const putProfileDetails = async (req: any, res: Response) => {
         }
 
         // Update the user details
-        userToUpdate.user_name = userName;
-        userToUpdate.date_of_birth = dateOfBirth;
-        userToUpdate.gender_id = genderId;
-        userToUpdate.profile_description = profileDescription;
-        userToUpdate.height = height;
-        userToUpdate.body_type_id = bodyType;
+        if(!userToUpdate.user_name) userToUpdate.user_name = userName;
+        if(!userToUpdate.date_of_birth) userToUpdate.date_of_birth = dateOfBirth;
+        if(!userToUpdate.gender_id) userToUpdate.gender_id = genderId;
+        if(userToUpdate.profile_description !== profileDescription) userToUpdate.profile_description = profileDescription;
+        if(height && userToUpdate.height !== height) userToUpdate.height = height;
+        if(bodyType && userToUpdate.body_type_id !== bodyType) userToUpdate.body_type_id = bodyType;
 
         // Save the updated user details
         await userToUpdate.save();
@@ -146,14 +146,33 @@ export const postProfileLocation = async (req: any, res: Response) => {
     }
 }
 
+export const getPreferences = async (req: any, res: Response) => {
+    logHelper({level: "INFO", message: "Fetching preferences", functionName:"getPreferences", additionalData: JSON.stringify(req.user)});
+
+    const userId = req.user.userId;
+    try{
+        const preference = await preferences.findOne({ where: { user_id: userId }, attributes: { exclude: ['createdAt', 'updatedAt'] }});
+
+        // If no preference record is found for the user, send an error response
+        if (!preference) {
+            return sendResponse(res, 404, false,"No preference record found for the user.");
+        }
+
+        return sendResponse(res, 200, true, "Preferences fetched successfully.", preference, null);
+    }catch (error:any) {
+        return sendResponse(res, 500, false, "Error fetching preferences.",null, error.message);
+    }
+}
+
 export const putPreferences = async (req: any, res: Response) => {
+    logHelper({level: "INFO", message: "Putting preferences", functionName:"putPreferences", additionalData: JSON.stringify(req.user)});
     const userId = req.user.userId;
 
-    const { min_age, max_age, min_distance, max_distance, min_height, max_height, body_type_preference_id, gender_preference_id } = req.body;
+    const { minAge, maxAge, minDistance, maxDistance, minHeight, maxHeight, bodyTypePreferenceId, genderPreferenceId } = req.body;
 
     try {
         // Find the user's preference record
-        const preference = await preferences.findOne({ where: { user_id: userId } });
+        const preference = await preferences.findOne({ where: { user_id: userId },  attributes: { exclude: ['createdAt', 'updatedAt'] }});
 
         // If no preference record is found for the user, handle it (maybe create one with default values or send an error response)
         if (!preference) {
@@ -161,14 +180,14 @@ export const putPreferences = async (req: any, res: Response) => {
         }
 
         // Update the preference
-        preference.min_age = min_age;
-        preference.max_age = max_age;
-        preference.min_distance = min_distance;
-        preference.max_distance = max_distance;
-        preference.min_height = min_height;
-        preference.max_height = max_height;
-        preference.body_type_preference_id = body_type_preference_id;
-        preference.gender_preference_id = gender_preference_id;
+        if(minAge && preference.min_age!==minAge) preference.min_age = minAge;
+        if(maxAge && preference.max_age!==maxAge) preference.max_age = maxAge;
+        if(minDistance && preference.min_distance!==minDistance) preference.min_distance = minDistance;
+        if(maxDistance && preference.max_distance!==maxDistance) preference.max_distance = maxDistance;
+        if(minHeight && preference.min_height!==minHeight) preference.min_height = minHeight;
+        if(maxHeight && preference.max_height!==maxHeight) preference.max_height = maxHeight;
+        if(bodyTypePreferenceId && preference.body_type_preference_id!==bodyTypePreferenceId) preference.body_type_preference_id = bodyTypePreferenceId;
+        if (genderPreferenceId && preference.gender_preference_id !== genderPreferenceId) preference.gender_preference_id = genderPreferenceId;
 
         await preference.save();
 
