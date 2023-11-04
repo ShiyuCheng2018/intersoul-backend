@@ -1,13 +1,14 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import {locations, profileMedias, users} from '../models/init-models';
+import {locations, preferences, profileMedias, users} from '../models/init-models';
 import {verifications} from "../models/verifications";
 import {oauth} from "../models/oauth";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import {sendResponse} from "../helper/sendResponse";
 dotenv.config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
@@ -131,8 +132,15 @@ passport.use("local-login", new LocalStrategy(
                 location = await locations.findOne({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt'] }}) as locations;
                 if(_profileMedias.length === 0 || !location) return done(null, false, { message: 'something wrong with your account, please contact us immediately.' });
             }
-            console.log(_profileMedias)
-            return done(null, { user:{...user, profileMedias: _profileMedias, location}, accessToken});
+
+            // Find the user's preference record
+            const preference = await preferences.findOne({ where: { user_id: user.user_id },  attributes: { exclude: ['createdAt', 'updatedAt'] }});
+            // If no preference record is found for the user send an error response)
+            if (!preference) {
+                return done(null, false, { message: 'No preferences found' });
+            }
+
+            return done(null, { user:{...user, profileMedias: _profileMedias, location, preferences:preference}, accessToken});
         } catch (err) {
             return done(err);
         }
