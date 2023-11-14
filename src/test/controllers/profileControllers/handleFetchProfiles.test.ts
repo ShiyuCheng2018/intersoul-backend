@@ -1,13 +1,23 @@
 import {users} from "../../../models/users";
+import {locations} from "../../../models/locations";
 import {fetchProfiles} from "../../../controllers/profileControllers";
 import {sendResponse} from "../../../helper/sendResponse";
-import {Response} from "express";
+import { Request, Response } from 'express';
 import {interactions, preferences} from "../../../models/init-models";
+import { getMockReq, getMockRes } from '@jest-mock/express';
 import {Op} from "sequelize";
 
 jest.mock("../../../models/users", ()=>{
     return {
         users: {
+            findOne: jest.fn(),
+            findAll: jest.fn(),
+        }
+    }
+});
+jest.mock("../../../models/locations", ()=>{
+    return {
+        locations: {
             findOne: jest.fn(),
             findAll: jest.fn(),
         }
@@ -20,7 +30,7 @@ jest.mock("../../../models/init-models", ()=>{
         },
         interactions: {
             findAll: jest.fn(),
-        }
+        },
     }
 });
 
@@ -76,16 +86,76 @@ describe("fetchProfiles", () => {
 
     it("should handle successful profile fetch", async () => {
         (users.findOne as jest.Mock).mockResolvedValueOnce({ is_profile_complete: true });
-        (preferences.findOne as jest.Mock).mockResolvedValueOnce({ gender_preference_id: "male", body_type_preference_id: "athletic", min_age: 20, max_age: 30 });
+        (preferences.findOne as jest.Mock).mockResolvedValueOnce({
+            gender_preference_id: "male",
+            body_type_preference_id: "athletic",
+            min_age: 20,
+            max_age: 30
+        });
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
-        (users.findAll as jest.Mock).mockResolvedValueOnce([{ user_id: "test-user-2", name: "John Doe", age:21}]);
+        (users.findAll as jest.Mock).mockResolvedValueOnce([{
+            user_id: "test-user-2",
+            name: "John Doe",
+            age: 21,
+            profile_media: [
+                // ... array of profile media objects
+            ]
+        },{
+            user_id: "test-user-3",
+            name: "Rachel",
+            age: 24,
+            profile_media: [
+                // ... array of profile media objects
+            ]
+        }]);
+        (locations.findOne as jest.Mock).mockResolvedValueOnce({
+            city: "Test City",
+            state: "Test State",
+            country: "Test Country",
+            latitude: 123.456,
+            longitude: 78.90
+        }).mockResolvedValueOnce({
+            city: "Test City",
+            state: "Test State",
+            country: "Test Country",
+            latitude: 123.456,
+            longitude: 78.90
+        });
 
-        const req = mockRequest({ user: { userId: "test-id" } });
+        const req = getMockReq({ user: { userId: "test-id" } });
+        const {res} = getMockRes();
 
-        await fetchProfiles(req, res as Response);
+        await fetchProfiles(req as Request, res as Response);
 
-        expect(sendResponse).toHaveBeenCalledWith(res, 200, true, "Profiles fetched successfully.", { user: [{ user_id: "test-user-2", name: "John Doe", age:21}] });
+        expect(sendResponse).toHaveBeenCalledWith(res, 200, true, "Profiles fetched successfully.", [
+            {
+                user_id: 'test-user-2',
+                name: 'John Doe',
+                age: 21,
+                profile_media: [],
+                location: {
+                    city: 'Test City',
+                    state: 'Test State',
+                    country: 'Test Country',
+                    latitude: 123.456,
+                    longitude: 78.9
+                }
+            },
+            {
+                user_id: 'test-user-3',
+                name: 'Rachel',
+                age: 24,
+                profile_media: [],
+                location: {
+                    city: 'Test City',
+                    state: 'Test State',
+                    country: 'Test Country',
+                    latitude: 123.456,
+                    longitude: 78.9
+                }
+            }
+        ]);
     });
 
     it("should filter profiles based on height preferences", async () => {
@@ -93,13 +163,42 @@ describe("fetchProfiles", () => {
         (preferences.findOne as jest.Mock).mockResolvedValueOnce({ min_height: 160, max_height: 180 });
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
-        (users.findAll as jest.Mock).mockResolvedValueOnce([{ user_id: "test-user-2", name: "John Doe" }]);
+        (users.findAll as jest.Mock).mockResolvedValueOnce([{ user_id: "test-user-2", name: "John Doe", height: 170 }]);
+        (locations.findOne as jest.Mock).mockResolvedValue({
+            city: "Test City",
+            state: "Test State",
+            country: "Test Country",
+            latitude: 123.456,
+            longitude: 78.90
+        });
 
-        const req = mockRequest({ user: { userId: "test-id" } });
+        const req = getMockReq({ user: { userId: "test-id" } });
+        const { res } = getMockRes();
 
-        await fetchProfiles(req, res as Response);
+        await fetchProfiles(req, res);
 
-        expect(users.findAll).toHaveBeenCalledWith({ where: expect.objectContaining({ height: { [Op.between]: [160, 180] } }) });
+        expect(users.findAll).toHaveBeenCalledWith({
+            where: expect.objectContaining({
+                height: { [Op.between]: [160, 180] },
+                is_profile_complete: true,
+                user_id: { [Op.notIn]: expect.any(Array) }
+            }),
+            attributes: {
+                exclude: expect.arrayContaining([
+                    'createdAt', 'updatedAt', 'hashed_password', 'provider', 'provider_id'
+                ])
+            },
+            include: expect.arrayContaining([
+                expect.objectContaining({
+                    as: 'profile_media',
+                    attributes: expect.arrayContaining(['media_path', 'profile_media_type_id', 'order']),
+                    model: expect.any(Function)
+                })
+            ])
+        });
+
+        // Additional assertions for the final response
+        // ...
     });
 
     it("should exclude users that the current user has interacted with", async () => {
@@ -108,12 +207,37 @@ describe("fetchProfiles", () => {
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([{ user2_id: "user-interacted" }]);
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
         (users.findAll as jest.Mock).mockResolvedValueOnce([{ user_id: "test-user-2", name: "John Doe" }]);
+        (locations.findOne as jest.Mock).mockResolvedValue({
+            city: "Test City",
+            state: "Test State",
+            country: "Test Country",
+            latitude: 123.456,
+            longitude: 78.90
+        });
 
-        const req = mockRequest({ user: { userId: "test-id" } });
+        const req = getMockReq({ user: { userId: "test-id" } });
+        const { res } = getMockRes();
 
-        await fetchProfiles(req, res as Response);
+        await fetchProfiles(req, res);
 
-        expect(users.findAll).toHaveBeenCalledWith({ where: expect.objectContaining({ user_id: { [Op.notIn]: ["user-interacted", "test-id"] } }) });
+        expect(users.findAll).toHaveBeenCalledWith({
+            where: expect.objectContaining({
+                user_id: { [Op.notIn]: ["user-interacted", "test-id"] },
+                is_profile_complete: true
+            }),
+            attributes: {
+                exclude: expect.arrayContaining([
+                    'createdAt', 'updatedAt', 'hashed_password', 'provider', 'provider_id'
+                ])
+            },
+            include: expect.arrayContaining([
+                expect.objectContaining({
+                    as: 'profile_media',
+                    attributes: expect.arrayContaining(['media_path', 'profile_media_type_id', 'order']),
+                    model: expect.any(Function)
+                })
+            ])
+        });
     });
 
     it("should exclude users who unmatched with the current user", async () => {
@@ -122,13 +246,39 @@ describe("fetchProfiles", () => {
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([]);
         (interactions.findAll as jest.Mock).mockResolvedValueOnce([{ user1_id: "user-unmatched" }]);
         (users.findAll as jest.Mock).mockResolvedValueOnce([{ user_id: "test-user-2", name: "John Doe" }]);
+        (locations.findOne as jest.Mock).mockResolvedValue({
+            city: "Test City",
+            state: "Test State",
+            country: "Test Country",
+            latitude: 123.456,
+            longitude: 78.90
+        });
 
-        const req = mockRequest({ user: { userId: "test-id" } });
+        const req = getMockReq({ user: { userId: "test-id" } });
+        const { res } = getMockRes();
 
-        await fetchProfiles(req, res as Response);
+        await fetchProfiles(req, res);
 
-        expect(users.findAll).toHaveBeenCalledWith({ where: expect.objectContaining({ user_id: { [Op.notIn]: ["user-unmatched", "test-id"] } }) });
+        expect(users.findAll).toHaveBeenCalledWith({
+            where: expect.objectContaining({
+                user_id: { [Op.notIn]: ["user-unmatched", "test-id"] },
+                is_profile_complete: true
+            }),
+            attributes: {
+                exclude: expect.arrayContaining([
+                    'createdAt', 'updatedAt', 'hashed_password', 'provider', 'provider_id'
+                ])
+            },
+            include: expect.arrayContaining([
+                expect.objectContaining({
+                    as: 'profile_media',
+                    attributes: expect.arrayContaining(['media_path', 'profile_media_type_id', 'order']),
+                    model: expect.any(Function)
+                })
+            ])
+        });
     });
+
 
     it("should handle errors during fetching profiles", async () => {
         (users.findOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));

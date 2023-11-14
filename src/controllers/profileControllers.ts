@@ -8,6 +8,7 @@ import {locations} from "../models/locations";
 import {interactions, interactionsAttributes, preferences} from "../models/init-models";
 import {sendResponse} from "../helper/sendResponse";
 import {logHelper} from "../helper/functionLoggerHelper";
+import axios from "axios";
 
 export const postProfileMedia = async (req: any, res: Response, next: any) => {
     logHelper({ level: "INFO", message: "Uploading profile media", functionName: "postProfileMedia", additionalData: JSON.stringify(req.user) });
@@ -33,7 +34,7 @@ export const postProfileMedia = async (req: any, res: Response, next: any) => {
         await profileMedias.create(mediaToSave).catch(e => {
             console.error("Error during profileMedias.create: ", e);
         });
-        const userProfileMedias = await profileMedias.findAll({ where: { user_id: req.user.userId } }).catch(e => {
+        const userProfileMedias = await profileMedias.findAll({ where: { user_id: req.user.userId },  attributes: { exclude: ['createdAt', 'updatedAt'] }}).catch(e => {
             console.error("Error during await profileMedias.findAll", e);
         });
         const isProfileComplete = await checkProfileCompletionHelper(req.user.userId).catch(e => {
@@ -121,15 +122,36 @@ export const putProfileDetails = async (req: any, res: Response) => {
     }
 }
 
+
 export const postProfileLocation = async (req: any, res: Response) => {
-    logHelper({level: "INFO", message: "posting/updating profile location", functionName: "postProfileLocation",additionalData: JSON.stringify(req.user)});
+    logHelper({ level: "INFO", message: "posting/updating profile location", functionName: "postProfileLocation", additionalData: JSON.stringify(req.user) });
+
     try {
         const userId = req.user.userId; // Get userId from JWT middleware
-        const { longitude, latitude, country, state, city } = req.body;
+        const { longitude, latitude } = req.body;
+
+        // Call Google Geocoding API
+        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`);
+
+        // Extract address components
+        const addressComponents = response.data.results[0].address_components;
+        let country = "", state = "", city = "";
+
+        addressComponents.forEach((component:any) => {
+            if (component.types.includes("country")) {
+                country = component.long_name;
+            }
+            if (component.types.includes("administrative_area_level_1")) {
+                state = component.long_name;
+            }
+            if (component.types.includes("locality")) {
+                city = component.long_name;
+            }
+        });
 
         // Use upsert to either update or create based on the userId
-        await locations.upsert({
-            user_id: userId, // Use this to determine if a record exists
+         await locations.upsert({
+            user_id: userId,
             longitude: longitude,
             latitude: latitude,
             country: country,
@@ -137,14 +159,22 @@ export const postProfileLocation = async (req: any, res: Response) => {
             city: city
         });
 
-        const isProfileComplete = await checkProfileCompletionHelper(req.user.userId);
+        // Fetch the latest location record for the user
+        const location = await locations.findOne({
+            where: { user_id: userId },
+            order: [['updated_at', 'DESC']], // Order by the most recent update
+            attributes: { exclude: ['createdAt', 'updatedAt'] }
+        });
 
-        return sendResponse(res, 200, true, "Location updated/added successfully.", {isProfileComplete}, null)
+        const isProfileComplete = await checkProfileCompletionHelper(userId);
+
+        return sendResponse(res, 200, true, "Location updated/added successfully.", { isProfileComplete, location }, null)
     } catch (error:any) {
         console.error("Error handling location: ", error);
         return sendResponse(res, 500, false, "Failed to handle location", null, error.message)
     }
-}
+};
+
 
 export const getPreferences = async (req: any, res: Response) => {
     logHelper({level: "INFO", message: "Fetching preferences", functionName:"getPreferences", additionalData: JSON.stringify(req.user)});
@@ -203,6 +233,7 @@ export const fetchProfiles = async (req: any, res: Response) => {
 
     try {
         const user = await users.findOne({ where: { user_id: userId } });
+
         if(!user){
             return sendResponse(res, 404, false, "User not found.", [], "User not found.");
         }
@@ -263,9 +294,31 @@ export const fetchProfiles = async (req: any, res: Response) => {
         };
 
         // Fetch users matching the criteria
-        const fetchingUsers = await users.findAll({ where: query });
+        const fetchingUsers = await users.findAll({ where: query,
+            attributes: { exclude: ['createdAt', 'updatedAt', "hashed_password", "provider", "provider_id"]},
+            include: [{
+                model: profileMedias,
+                as: 'profile_media',
+                attributes: ['media_path', 'profile_media_type_id', 'order'] // Include only required attributes
+            }]
+        });
 
-        return sendResponse(res, 200, true, "Profiles fetched successfully.", {user: fetchingUsers});
+
+        for (const user of fetchingUsers) {
+            try {
+                const latestLocation = await locations.findOne({
+                    where: {user_id: user.user_id},
+                    order: [['updated_at', 'DESC']],
+                    attributes: ['city', 'state', 'country', 'latitude', 'longitude']
+                });
+                (user as any).location = latestLocation;
+            }catch (error:any) {
+                console.error("Error fetching location:", error);
+                return sendResponse(res, 500, false, "Error fetching location.", null, error.message);
+            }
+        }
+
+        return sendResponse(res, 200, true, "Profiles fetched successfully.", fetchingUsers);
     } catch (error: any) {
         return sendResponse(res, 500, false, "Error fetching profiles.", null,error.message);
     }

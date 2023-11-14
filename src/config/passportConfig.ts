@@ -23,10 +23,8 @@ passport.use('local-signup', new LocalStrategy(
         passReqToCallback: true // allows us to pass back the entire request to the callback
     },
     async (req, email, password, done) => {
-        console.log(email,password )
         try {
             const existingUser = await users.findOne({ where: { email } });
-            console.log(existingUser)
             if (existingUser) {
                 return done(null, false, { message: 'Seems you already have an account. Please try to login.' });
             }
@@ -79,7 +77,6 @@ passport.use('local-signup', new LocalStrategy(
 passport.use("local-login", new LocalStrategy(
     { usernameField: 'email', passwordField: 'password' },
     async (email, password, done) => {
-        console.log(email, password)
         try {
             const _user = await users.findOne({ where: { email: email}, attributes: { exclude: ['createdAt', 'updatedAt'] }});
 
@@ -127,11 +124,9 @@ passport.use("local-login", new LocalStrategy(
 
             let _profileMedias: Array<profileMedias> = [];
             let location: locations | null = null;
-            if(user.is_profile_complete){
-                _profileMedias = await profileMedias.findAll({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt', 'upload_date'] }})
-                location = await locations.findOne({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt'] }}) as locations;
-                if(_profileMedias.length === 0 || !location) return done(null, false, { message: 'something wrong with your account, please contact us immediately.' });
-            }
+
+            _profileMedias = await profileMedias.findAll({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt', 'upload_date'] }})
+            location = await locations.findOne({where: {user_id: user.user_id}, attributes: { exclude: ['createdAt', 'updatedAt'] }}) as locations;
 
             // Find the user's preference record
             const preference = await preferences.findOne({ where: { user_id: user.user_id },  attributes: { exclude: ['createdAt', 'updatedAt'] }});
